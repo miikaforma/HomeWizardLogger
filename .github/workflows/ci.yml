@@ -188,7 +188,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ./publish/Dockerfile
           push: ${{ inputs.push }}
-          tags: ${{ secrets.DOCKER_USERNAME }}/dayaheadprices-logger:${{ env.RELEASE_VERSION }},${{ secrets.DOCKER_USERNAME }}/dayaheadprices-logger:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/homewizard-logger:${{ env.RELEASE_VERSION }},${{ secrets.DOCKER_USERNAME }}/homewizard-logger:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
