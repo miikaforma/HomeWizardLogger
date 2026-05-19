@@ -46,33 +46,71 @@ public class DatabaseService(ILogger<DatabaseService> logger, IOptions<Timescale
             await using var conn = new NpgsqlConnection(_timescaleDbSettings.ConnectionString);
             await conn.OpenAsync(cancellationToken);
 
-            var sql = $@"
-                INSERT INTO homewizard_measurements (
-                    unique_id, protocol_version, meter_model, timestamp, tariff,
-                    energy_import_kwh, energy_import_t1_kwh, energy_import_t2_kwh, energy_import_t3_kwh, energy_import_t4_kwh,
-                    energy_export_kwh, energy_export_t1_kwh, energy_export_t2_kwh, energy_export_t3_kwh, energy_export_t4_kwh,
-                    power_w, power_l1_w, power_l2_w, power_l3_w,
-                    voltage_v, voltage_l1_v, voltage_l2_v, voltage_l3_v,
-                    current_a, current_l1_a, current_l2_a, current_l3_a,
-                    frequency_hz,
-                    voltage_sag_l1_count, voltage_sag_l2_count, voltage_sag_l3_count,
-                    voltage_swell_l1_count, voltage_swell_l2_count, voltage_swell_l3_count,
-                    any_power_fail_count, long_power_fail_count,
-                    average_power_15m_w, monthly_power_peak_w, monthly_power_peak_timestamp
-                ) VALUES (
-                    @unique_id, @protocol_version, @meter_model, @timestamp, @tariff,
-                    @energy_import_kwh, @energy_import_t1_kwh, @energy_import_t2_kwh, @energy_import_t3_kwh, @energy_import_t4_kwh,
-                    @energy_export_kwh, @energy_export_t1_kwh, @energy_export_t2_kwh, @energy_export_t3_kwh, @energy_export_t4_kwh,
-                    @power_w, @power_l1_w, @power_l2_w, @power_l3_w,
-                    @voltage_v, @voltage_l1_v, @voltage_l2_v, @voltage_l3_v,
-                    @current_a, @current_l1_a, @current_l2_a, @current_l3_a,
-                    @frequency_hz,
-                    @voltage_sag_l1_count, @voltage_sag_l2_count, @voltage_sag_l3_count,
-                    @voltage_swell_l1_count, @voltage_swell_l2_count, @voltage_swell_l3_count,
-                    @any_power_fail_count, @long_power_fail_count,
-                    @average_power_15m_w, @monthly_power_peak_w, @monthly_power_peak_timestamp
-                )
-            ";
+        var sql = @"
+            INSERT INTO homewizard_measurements (
+                unique_id, protocol_version, meter_model, timestamp, tariff,
+                energy_import_kwh, energy_import_t1_kwh, energy_import_t2_kwh, energy_import_t3_kwh, energy_import_t4_kwh,
+                energy_export_kwh, energy_export_t1_kwh, energy_export_t2_kwh, energy_export_t3_kwh, energy_export_t4_kwh,
+                power_w, power_l1_w, power_l2_w, power_l3_w,
+                voltage_v, voltage_l1_v, voltage_l2_v, voltage_l3_v,
+                current_a, current_l1_a, current_l2_a, current_l3_a,
+                frequency_hz,
+                voltage_sag_l1_count, voltage_sag_l2_count, voltage_sag_l3_count,
+                voltage_swell_l1_count, voltage_swell_l2_count, voltage_swell_l3_count,
+                any_power_fail_count, long_power_fail_count,
+                average_power_15m_w, monthly_power_peak_w, monthly_power_peak_timestamp
+            ) VALUES (
+                @unique_id, @protocol_version, @meter_model, @timestamp, @tariff,
+                @energy_import_kwh, @energy_import_t1_kwh, @energy_import_t2_kwh, @energy_import_t3_kwh, @energy_import_t4_kwh,
+                @energy_export_kwh, @energy_export_t1_kwh, @energy_export_t2_kwh, @energy_export_t3_kwh, @energy_export_t4_kwh,
+                @power_w, @power_l1_w, @power_l2_w, @power_l3_w,
+                @voltage_v, @voltage_l1_v, @voltage_l2_v, @voltage_l3_v,
+                @current_a, @current_l1_a, @current_l2_a, @current_l3_a,
+                @frequency_hz,
+                @voltage_sag_l1_count, @voltage_sag_l2_count, @voltage_sag_l3_count,
+                @voltage_swell_l1_count, @voltage_swell_l2_count, @voltage_swell_l3_count,
+                @any_power_fail_count, @long_power_fail_count,
+                @average_power_15m_w, @monthly_power_peak_w, @monthly_power_peak_timestamp
+            )
+            ON CONFLICT (timestamp, unique_id) DO UPDATE SET
+                protocol_version = EXCLUDED.protocol_version,
+                meter_model = EXCLUDED.meter_model,
+                tariff = EXCLUDED.tariff,
+                energy_import_kwh = EXCLUDED.energy_import_kwh,
+                energy_import_t1_kwh = EXCLUDED.energy_import_t1_kwh,
+                energy_import_t2_kwh = EXCLUDED.energy_import_t2_kwh,
+                energy_import_t3_kwh = EXCLUDED.energy_import_t3_kwh,
+                energy_import_t4_kwh = EXCLUDED.energy_import_t4_kwh,
+                energy_export_kwh = EXCLUDED.energy_export_kwh,
+                energy_export_t1_kwh = EXCLUDED.energy_export_t1_kwh,
+                energy_export_t2_kwh = EXCLUDED.energy_export_t2_kwh,
+                energy_export_t3_kwh = EXCLUDED.energy_export_t3_kwh,
+                energy_export_t4_kwh = EXCLUDED.energy_export_t4_kwh,
+                power_w = EXCLUDED.power_w,
+                power_l1_w = EXCLUDED.power_l1_w,
+                power_l2_w = EXCLUDED.power_l2_w,
+                power_l3_w = EXCLUDED.power_l3_w,
+                voltage_v = EXCLUDED.voltage_v,
+                voltage_l1_v = EXCLUDED.voltage_l1_v,
+                voltage_l2_v = EXCLUDED.voltage_l2_v,
+                voltage_l3_v = EXCLUDED.voltage_l3_v,
+                current_a = EXCLUDED.current_a,
+                current_l1_a = EXCLUDED.current_l1_a,
+                current_l2_a = EXCLUDED.current_l2_a,
+                current_l3_a = EXCLUDED.current_l3_a,
+                frequency_hz = EXCLUDED.frequency_hz,
+                voltage_sag_l1_count = EXCLUDED.voltage_sag_l1_count,
+                voltage_sag_l2_count = EXCLUDED.voltage_sag_l2_count,
+                voltage_sag_l3_count = EXCLUDED.voltage_sag_l3_count,
+                voltage_swell_l1_count = EXCLUDED.voltage_swell_l1_count,
+                voltage_swell_l2_count = EXCLUDED.voltage_swell_l2_count,
+                voltage_swell_l3_count = EXCLUDED.voltage_swell_l3_count,
+                any_power_fail_count = EXCLUDED.any_power_fail_count,
+                long_power_fail_count = EXCLUDED.long_power_fail_count,
+                average_power_15m_w = EXCLUDED.average_power_15m_w,
+                monthly_power_peak_w = EXCLUDED.monthly_power_peak_w,
+                monthly_power_peak_timestamp = EXCLUDED.monthly_power_peak_timestamp
+        ";
 
             await using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("unique_id", (object?)measurement.UniqueId ?? DBNull.Value);
