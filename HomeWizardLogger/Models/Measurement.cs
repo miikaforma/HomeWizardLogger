@@ -8,6 +8,13 @@ namespace HomeWizardLogger.Models
         [JsonPropertyName("protocol_version")] public double? ProtocolVersion { get; set; }
         [JsonPropertyName("meter_model")] public string? MeterModel { get; set; }
         [JsonPropertyName("timestamp")] public DateTime? Timestamp { get; set; }
+        [JsonIgnore] public DateTime? TimestampUtc { get; private set; }
+
+        public void ResolveTimestamp(DateTimeOffset receivedAt, TimeZoneInfo timezone)
+        {
+            TimestampUtc ??= MeasurementTimestamp.ResolveUtc(Timestamp, receivedAt, timezone);
+        }
+
         [JsonPropertyName("tariff")] public double? Tariff { get; set; }
         [JsonPropertyName("energy_import_kwh")] public double? EnergyImportKwh { get; set; }
         [JsonPropertyName("energy_import_t1_kwh")] public double? EnergyImportT1Kwh { get; set; }

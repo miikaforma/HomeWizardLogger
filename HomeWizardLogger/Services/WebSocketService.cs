@@ -20,6 +20,7 @@ public class WebSocketService : IWebSocketService
     private CancellationTokenSource? _cts;
     private readonly X509Certificate2? _caCert;
     private readonly IDatabaseService _databaseService;
+    private readonly TimeZoneInfo _measurementTimezone;
     private readonly ConcurrentQueue<Measurement> _failedInserts = new();
     private Task? _retryTask;
     private CancellationTokenSource? _retryCts;
@@ -29,6 +30,7 @@ public class WebSocketService : IWebSocketService
         _logger = logger;
         _databaseService = databaseService;
         _homeWizardSettings = homeWizardOptions.Value;
+        _measurementTimezone = TimeZoneInfo.FindSystemTimeZoneById(Const.TimezoneId);
         // Load HomeWizard CA certificate (PEM format)
         var caCertPath = Path.Combine(AppContext.BaseDirectory, "Certificates", "homewizard-ca-cert.pem");
         if (File.Exists(caCertPath))
@@ -100,6 +102,7 @@ public class WebSocketService : IWebSocketService
         while (_clientWebSocket is { State: WebSocketState.Open } && !cancellationToken.IsCancellationRequested)
         {
             var result = await _clientWebSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+            var receivedAt = DateTimeOffset.UtcNow;
             if (result.MessageType == WebSocketMessageType.Close)
             {
                 _logger.LogWarning("WebSocket closed by server");
@@ -107,7 +110,7 @@ public class WebSocketService : IWebSocketService
             }
             var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
             _logger.LogInformation("Received: {Message}", message);
-            await HandleWebSocketMessage(message);
+            await HandleWebSocketMessage(message, receivedAt);
         }
     }
 
@@ -129,7 +132,7 @@ public class WebSocketService : IWebSocketService
         }
     }
 
-    private async Task HandleWebSocketMessage(string message)
+    private async Task HandleWebSocketMessage(string message, DateTimeOffset receivedAt)
     {
         try
         {
@@ -184,6 +187,7 @@ public class WebSocketService : IWebSocketService
                                 });
                                 if (measurement != null)
                                 {
+                                    measurement.ResolveTimestamp(receivedAt, _measurementTimezone);
                                     var success = await _databaseService.InsertMeasurementAsync(measurement, _cts!.Token);
                                     if (!success)
                                     {

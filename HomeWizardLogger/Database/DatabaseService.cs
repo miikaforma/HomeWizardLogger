@@ -16,33 +16,14 @@ public class DatabaseService(ILogger<DatabaseService> logger, IOptions<Timescale
 {
     private readonly TimescaleDbSettings _timescaleDbSettings = timescaleDbSettings.Value;
 
-    private static DateTime ToUtcFromConfiguredTimezone(DateTime? localTimestamp)
-    {
-        if (localTimestamp == null)
-            return DateTime.UtcNow;
-        try
-        {
-            var tzId = Const.TimezoneId;
-            var tz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-            // Assume input is local time in configured timezone, convert to UTC
-            var local = DateTime.SpecifyKind(localTimestamp.Value, DateTimeKind.Unspecified);
-            return TimeZoneInfo.ConvertTimeToUtc(local, tz);
-        }
-        catch
-        {
-            // Fallback: treat as UTC if timezone not found
-            return localTimestamp.Value.Kind == DateTimeKind.Utc ? localTimestamp.Value : DateTime.SpecifyKind(localTimestamp.Value, DateTimeKind.Utc);
-        }
-    }
-
     public async Task<bool> InsertMeasurementAsync(Measurement measurement, CancellationToken cancellationToken = default)
     {
         if (!_timescaleDbSettings.Enabled)
             return false;
         try
         {
-            // Convert timestamp from configured timezone to UTC for TimescaleDB
-            var timestamp = ToUtcFromConfiguredTimezone(measurement.Timestamp);
+            var timestamp = measurement.TimestampUtc
+                ?? throw new InvalidOperationException("Measurement timestamp must be resolved at receipt before inserting.");
             await using var conn = new NpgsqlConnection(_timescaleDbSettings.ConnectionString);
             await conn.OpenAsync(cancellationToken);
 
