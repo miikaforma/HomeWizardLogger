@@ -9,6 +9,8 @@ public record HomeWizardSettings
     public required string Address { get; set; }
     
     public required string Token { get; set; }
+
+    public string? UniqueIdOverride { get; set; }
 }
 
 public class HomeWizardSettingsValidation : IValidateOptions<HomeWizardSettings>
@@ -23,6 +25,11 @@ public class HomeWizardSettingsValidation : IValidateOptions<HomeWizardSettings>
         if (string.IsNullOrWhiteSpace(settings.Token))
         {
             return ValidateOptionsResult.Fail("Token must be provided.");
+        }
+
+        if (settings.UniqueIdOverride != null && string.IsNullOrWhiteSpace(settings.UniqueIdOverride))
+        {
+            return ValidateOptionsResult.Fail("UniqueIdOverride must be omitted or contain a non-whitespace ID.");
         }
         
         return ValidateOptionsResult.Success;

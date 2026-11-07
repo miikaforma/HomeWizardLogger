@@ -62,6 +62,7 @@ class Program
         
         // Add settings validators
         services.AddSingleton<IValidateOptions<TimescaleDbSettings>, TimescaleDbSettingsValidation>();
+        services.AddSingleton<IValidateOptions<HomeWizardSettings>, HomeWizardSettingsValidation>();
 
         // Add settings
         services

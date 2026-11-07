@@ -24,6 +24,8 @@ public class WebSocketService : IWebSocketService
     private readonly ConcurrentQueue<Measurement> _failedInserts = new();
     private Task? _retryTask;
     private CancellationTokenSource? _retryCts;
+    private bool _hasReportedUniqueId;
+    private string? _lastReportedUniqueId;
 
     public WebSocketService(ILogger<WebSocketService> logger, IOptions<HomeWizardSettings> homeWizardOptions, IDatabaseService databaseService)
     {
@@ -187,6 +189,20 @@ public class WebSocketService : IWebSocketService
                                 });
                                 if (measurement != null)
                                 {
+                                    var reportedUniqueId = measurement.UniqueId;
+                                    measurement.UniqueId = _homeWizardSettings.UniqueIdOverride ?? reportedUniqueId;
+                                    if (!_hasReportedUniqueId)
+                                    {
+                                        _logger.LogInformation("Measurement ID: reported {ReportedUniqueId}, stored {StoredUniqueId}",
+                                            reportedUniqueId, measurement.UniqueId);
+                                    }
+                                    else if (!string.Equals(_lastReportedUniqueId, reportedUniqueId, StringComparison.Ordinal))
+                                    {
+                                        _logger.LogWarning("Reported measurement ID changed from {PreviousUniqueId} to {ReportedUniqueId}; storing as {StoredUniqueId}",
+                                            _lastReportedUniqueId, reportedUniqueId, measurement.UniqueId);
+                                    }
+                                    _lastReportedUniqueId = reportedUniqueId;
+                                    _hasReportedUniqueId = true;
                                     measurement.ResolveTimestamp(receivedAt, _measurementTimezone);
                                     var success = await _databaseService.InsertMeasurementAsync(measurement, _cts!.Token);
                                     if (!success)
